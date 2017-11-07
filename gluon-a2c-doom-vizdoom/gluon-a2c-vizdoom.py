@@ -11,17 +11,12 @@ import mxnet.ndarray as F
 from mxnet import autograd
 from mxnet import gluon
 
-# Q-learning settings
-learning_rate = 0.0005
-
-
-
 EPISODES = 500000  # Number of episodes to be played
 LEARNING_STEPS = 250  # Maximum number of learning steps within each episodes
 DISPLAY_COUNT = 1000  # The number of episodes to play before showing statistics.
 
-# exploration rate
 gamma = 0.99
+learning_rate = 0.0005
 
 # Other parameters
 frame_repeat = 12
@@ -37,17 +32,14 @@ ctx = mx.cpu()
 config_file_path = "../../ViZDoom/scenarios/basic.cfg"
 # config_file_path = "../../scenarios/deathmatch.cfg"
 
-# ------------Add
-manualSeed = 1 # random.randint(1, 10000) # Set the desired seed to reproduce the results
+manualSeed = 1  # Set the desired seed to reproduce the results
 mx.random.seed(manualSeed)
-# ---------------
 
 # Converts and down-samples the input image
 def preprocess(img):
     img = skimage.transform.resize(img, resolution)
     img = img.astype(np.float32)
     return img
-
 
 # gluon.Block is the basic building block of models.
 # You can define networks by composing and inheriting Block:
@@ -57,7 +49,7 @@ class Net(gluon.Block):
         with self.name_scope():
             self.conv1 = gluon.nn.Conv2D(8, kernel_size=6, strides=3)
             self.conv2 = gluon.nn.Conv2D(8, kernel_size=3, strides=2)
-            self.dense = gluon.nn.Dense(200, activation='tanh')
+            self.dense = gluon.nn.Dense(200, activation='relu')
             self.dense2 = gluon.nn.Dense(200, activation='relu')
             self.action_pred = gluon.nn.Dense(available_actions_count, in_units=200)
             self.value_pred = gluon.nn.Dense(1, in_units=200)
@@ -94,10 +86,6 @@ if __name__ == '__main__':
     # Action = which buttons are pressed
     n = game.get_available_buttons_size()
     doom_actions = [list(a) for a in it.product([0, 1], repeat=n)]
-    # shoot = [0, 0, 1]
-    # left = [1, 0, 0]
-    # right = [0, 1, 0]
-    # doom_actions = [shoot, left, right]
 
     loss = gluon.loss.L2Loss()
     model = Net(len(doom_actions))
