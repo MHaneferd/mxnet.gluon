@@ -22,15 +22,13 @@ learning_rate = 0.0005
 frame_repeat = 12
 resolution = (30, 45)
 
-model_savefile = "./model-doom.pth"
-
 ctx = mx.cpu()
 
 # Configuration file path
-# config_file_path = "../../scenarios/simpler_basic.cfg"
-# config_file_path = "../../scenarios/rocket_basic.cfg"
+# config_file_path = "../../ViZDoom/scenarios/simpler_basic.cfg"
+# config_file_path = "../../ViZDoom/scenarios/rocket_basic.cfg"
 config_file_path = "../../ViZDoom/scenarios/basic.cfg"
-# config_file_path = "../../scenarios/deathmatch.cfg"
+# config_file_path = "../../ViZDoom/scenarios/deathmatch.cfg"
 
 manualSeed = 1  # Set the desired seed to reproduce the results
 mx.random.seed(manualSeed)
