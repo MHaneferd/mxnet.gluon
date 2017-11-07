@@ -180,7 +180,6 @@ if __name__ == '__main__':
             autograd.backward(final_nodes)
         optimizer.step(s1.shape[0])
 
-
         if episode % DISPLAY_COUNT == 0:
             train_scores = np.array(train_scores)
             print("Episodes {}\t".format(episode),
