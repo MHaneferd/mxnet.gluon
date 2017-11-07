@@ -24,7 +24,7 @@ LEARNING_STEPS = 250  # Maximum number of learning steps within each episodes
 MAX_SHOTS = 5  # Max shots the player can take.
 DISPLAY_COUNT = 1000  # The number of episodes to play before showing statistics and last played game.
 
-#  If you have NVIDIA you lucky guy or using AWS, please try out gpu settings.
+#  If you have NVIDIA or are using AWS, you lucky guy, please try out gpu settings:
 ctx = mx.cpu()
 gamma = 0.99
 
