@@ -15,8 +15,10 @@ EPISODES = 500000  # Number of episodes to be played
 LEARNING_STEPS = 250  # Maximum number of learning steps within each episodes
 DISPLAY_COUNT = 1000  # The number of episodes to play before showing statistics.
 
-gamma = 0.99
+gamma = 0.9
 learning_rate = 0.0005
+momentum_param = 0.1
+learning_rates = [0.0001, 0.01]
 
 # Other parameters
 frame_repeat = 12
@@ -48,7 +50,7 @@ class Net(gluon.Block):
             self.conv1 = gluon.nn.Conv2D(8, kernel_size=6, strides=3)
             self.conv2 = gluon.nn.Conv2D(8, kernel_size=3, strides=2)
             self.dense = gluon.nn.Dense(200, activation='relu')
-            self.dense2 = gluon.nn.Dense(200, activation='relu')
+#            self.dense2 = gluon.nn.Dense(200, activation='relu')
             self.action_pred = gluon.nn.Dense(available_actions_count, in_units=200)
             self.value_pred = gluon.nn.Dense(1, in_units=200)
 
@@ -57,7 +59,7 @@ class Net(gluon.Block):
         x = F.relu(self.conv2(x))
         x = x.reshape((-1, 192))
         x = self.dense(x)
-        x = self.dense2(x)
+#        x = self.dense2(x)
         probs = self.action_pred(x)
         values = self.value_pred(x)
         return mx.ndarray.softmax(probs), values
@@ -88,7 +90,7 @@ if __name__ == '__main__':
     loss = gluon.loss.L2Loss()
     model = Net(len(doom_actions))
     model.collect_params().initialize(mx.init.Xavier(), ctx=ctx)
-    optimizer = gluon.Trainer(model.collect_params(), 'sgd', {'learning_rate': learning_rate})
+    optimizer = gluon.Trainer(model.collect_params(), 'sgd', {'learning_rate': learning_rate, 'momentum': momentum_param})
 
     print("Start the training!")
     episode_rewards = 0
