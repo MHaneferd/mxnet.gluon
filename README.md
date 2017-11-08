@@ -1,5 +1,5 @@
 # mxnet.gluon
-Some Python scripts that I have modified and extended to learn the Mxnet gluon package for deep learning, and Python coding itself.. Since therte is not much mxnet.gluon files out there, I have found some Pytorch files that I have translated to gluon.
+Some Python scripts that I have modified and extended to learn the Mxnet gluon package for deep learning, and Python coding itself.. Since there are not much mxnet.gluon files out there, I have found some Pytorch files that I have translated to gluon.
 
 
 [gluon-a2c.py](https://github.com/MHaneferd/mxnet.gluon/blob/master/gluon-a2c-ascii-env/gluon-a2c.py)<br />
