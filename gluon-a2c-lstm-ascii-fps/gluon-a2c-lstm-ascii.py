@@ -19,7 +19,7 @@ from mxnet import nd, autograd
 
 ACTIONS = ['left', 'right', 'shoot']  # available actions
 ENV_SIZE = 5  # This is the size of the environment (Number of characters to move around)
-EPISODES = 500000  # Number of episodes to be played
+EPISODES = 300000  # Number of episodes to be played
 LEARNING_STEPS = 250  # Maximum number of learning steps within each episodes
 MAX_SHOTS = 5  # Max shots the player can take.
 DISPLAY_COUNT = 1000  # The number of episodes to play before showing statistics and last played game.
@@ -162,20 +162,33 @@ class env:
 #  The action is returned with a softmax.
 
 class Net(gluon.Block):
-    def __init__(self, actions_count):
+    def __init__(self, actions_count, num_hidden=200, num_layers=2, dropout=0):
         super(Net, self).__init__()
         with self.name_scope():
             self.dense = gluon.nn.Dense(200, activation='tanh')
             self.dense2 = gluon.nn.Dense(200, activation='relu')
-            self.action_pred = gluon.nn.Dense(actions_count, in_units=200)
-            self.value_pred = gluon.nn.Dense(1, in_units=200)
+            self.lstm = gluon.rnn.LSTM(num_hidden, num_layers, dropout=dropout, input_size=1)
+            self.action_pred = gluon.nn.Dense(actions_count, in_units=40000)
+            self.value_pred = gluon.nn.Dense(1, in_units=40000)
 
-    def forward(self, x):
+    def forward(self, x, hidden):
         x = self.dense(x)
         x = self.dense2(x)
+        x, hidden = self.lstm(x, hidden)
         probs = self.action_pred(x)
         values = self.value_pred(x)
-        return mx.ndarray.softmax(probs), values
+        return mx.ndarray.softmax(probs), values, hidden
+
+    def begin_state(self, *args, **kwargs):
+        return self.lstm.begin_state(*args, **kwargs)
+
+
+def detach(hidden):
+    if isinstance(hidden, (tuple, list)):
+        hidden = [i.detach() for i in hidden]
+    else:
+        hidden = hidden.detach()
+    return hidden
 
 
 if __name__ == "__main__":
@@ -184,7 +197,7 @@ if __name__ == "__main__":
     loss = gluon.loss.L2Loss()
     model = Net(len(ACTIONS))
     model.collect_params().initialize(mx.init.Xavier(), ctx=ctx)
-    optimizer = gluon.Trainer(model.collect_params(), 'sgd', {'learning_rate': 0.0001})
+    optimizer = gluon.Trainer(model.collect_params(), 'sgd', {'learning_rate': 0.001})
 
     print("\r\nStart training!\n")
 
@@ -202,16 +215,21 @@ if __name__ == "__main__":
         # Create new environment for the episode
         env.new_game()
 
+        # Initialize LSTM
+        hidden = model.begin_state(func = mx.nd.zeros, batch_size = 200, ctx=ctx)
+
         s1 = env.get_env()
         s1 = s1.reshape([1, 1, 2, ENV_SIZE])
         s1 = nd.array(s1)
         s1 = s1.as_in_context(ctx)
 
+        hidden = detach(hidden)
+
         with autograd.record():
             for learning_step in range(LEARNING_STEPS):
 
                 #  Returns the value znd probabillity for action from the model
-                prob, value = model(s1)
+                prob, value, hidden = model(s1, hidden)
 
                 index, logp = mx.nd.sample_multinomial(prob, get_prob=True)
                 action = index.asnumpy()[0].astype(np.int64)
