@@ -1,6 +1,7 @@
 #  The following python script is made with a combination of ascii environment and a2c model
 #  created with mxnet gluon.
 #  I found it difficult to Vizdoom work, so I created a "Ascii-Doom".
+#  This uses LSTM, and it is quite faster than the script without LSTM.
 #
 #  Example output:
 #  x----+-Episodes 125000	 Results: mean: 64.5 +/- 80.3, min: -131.0, max: 100.0,
@@ -19,7 +20,7 @@ from mxnet import nd, autograd
 
 ACTIONS = ['left', 'right', 'shoot']  # available actions
 ENV_SIZE = 5  # This is the size of the environment (Number of characters to move around)
-EPISODES = 300000  # Number of episodes to be played
+EPISODES = 100000  # Number of episodes to be played
 LEARNING_STEPS = 250  # Maximum number of learning steps within each episodes
 MAX_SHOTS = 5  # Max shots the player can take.
 DISPLAY_COUNT = 1000  # The number of episodes to play before showing statistics and last played game.
@@ -162,22 +163,22 @@ class env:
 #  The action is returned with a softmax.
 
 class Net(gluon.Block):
-    def __init__(self, actions_count, num_hidden=200, num_layers=2, dropout=0):
+    def __init__(self, actions_count, num_hidden=200, num_layers=1):
         super(Net, self).__init__()
         with self.name_scope():
-            self.dense = gluon.nn.Dense(200, activation='tanh')
+            self.lstm = gluon.rnn.LSTM(num_hidden, num_layers)
+            self.dense = gluon.nn.Dense(200, activation='relu')
             self.dense2 = gluon.nn.Dense(200, activation='relu')
-            self.lstm = gluon.rnn.LSTM(num_hidden, num_layers, dropout=dropout, input_size=1)
-            self.action_pred = gluon.nn.Dense(actions_count, in_units=40000)
-            self.value_pred = gluon.nn.Dense(1, in_units=40000)
+            self.action_pred = gluon.nn.Dense(actions_count, in_units=200)
+            self.value_pred = gluon.nn.Dense(1, in_units=200)
 
-    def forward(self, x, hidden):
+    def forward(self, x):
+        x = self.lstm(x)
         x = self.dense(x)
         x = self.dense2(x)
-        x, hidden = self.lstm(x, hidden)
         probs = self.action_pred(x)
         values = self.value_pred(x)
-        return mx.ndarray.softmax(probs), values, hidden
+        return mx.ndarray.softmax(probs), values
 
     def begin_state(self, *args, **kwargs):
         return self.lstm.begin_state(*args, **kwargs)
@@ -215,21 +216,17 @@ if __name__ == "__main__":
         # Create new environment for the episode
         env.new_game()
 
-        # Initialize LSTM
-        hidden = model.begin_state(func = mx.nd.zeros, batch_size = 200, ctx=ctx)
 
         s1 = env.get_env()
-        s1 = s1.reshape([1, 1, 2, ENV_SIZE])
+        s1 = s1.reshape([1, 1, ENV_SIZE*2])
         s1 = nd.array(s1)
         s1 = s1.as_in_context(ctx)
-
-        hidden = detach(hidden)
 
         with autograd.record():
             for learning_step in range(LEARNING_STEPS):
 
                 #  Returns the value znd probabillity for action from the model
-                prob, value, hidden = model(s1, hidden)
+                prob, value = model(s1)
 
                 index, logp = mx.nd.sample_multinomial(prob, get_prob=True)
                 action = index.asnumpy()[0].astype(np.int64)
