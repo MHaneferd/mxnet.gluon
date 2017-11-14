@@ -11,3 +11,7 @@ The configuration of which Doom WAD file to use must be modified before running 
 
 [gluon-dqn-vizdoom.py](https://github.com/MHaneferd/mxnet.gluon/blob/master/gluon-dqn-doom-vizdoom/gluon-dqn-vizdoom.py)<br />
 This file uses DQN network model with mxnet gluon. It is translated from Pytorch file. ( I have not invented the logic here, just made it work with mxnet.gluon ). It uses Doom (Vizdoom) environment. The configuration of which Doom WAD file to use must be modified before running (As I cannot imagine you have the same path as I)
+
+[gluon-a2c-lstm-ascii.py](https://github.com/MHaneferd/mxnet.gluon/blob/master/gluon-a2c-lstm-ascii-fps/gluon-a2c-lstm-ascii.py)<br />
+This file is based on the gluon-a2c.py , but has an LSTM layer in addition in the model. It performs with a much better accuracy than the latter. The LSTM layer is added into the model with one for the initialize, and one in the forward statement.
+The shape of the input has been reduced to 3D instead of 4D as in gluon-a2c.py
