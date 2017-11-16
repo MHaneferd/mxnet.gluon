@@ -11,13 +11,17 @@ import mxnet.ndarray as F
 from mxnet import autograd
 from mxnet import gluon
 
-EPISODES = 500000  # Number of episodes to be played
+EPISODES = 1000000  # Number of episodes to be played
 LEARNING_STEPS = 250  # Maximum number of learning steps within each episodes
 DISPLAY_COUNT = 1000  # The number of episodes to play before showing statistics.
 
+#  https://machinelearningmastery.com/adam-optimization-algorithm-for-deep-learning/
 gamma = 0.9
-learning_rate = 0.0005
-momentum_param = 0.1
+beta1 = 0.9
+beta2 = 0.999
+epsilon = 1e-8
+learning_rate = 0.0001
+momentum_param = 0.05
 learning_rates = [0.0001, 0.01]
 
 # Other parameters
@@ -49,17 +53,21 @@ class Net(gluon.Block):
         with self.name_scope():
             self.conv1 = gluon.nn.Conv2D(8, kernel_size=6, strides=3)
             self.conv2 = gluon.nn.Conv2D(8, kernel_size=3, strides=2)
-            self.dense = gluon.nn.Dense(200, activation='relu')
-#            self.dense2 = gluon.nn.Dense(200, activation='relu')
-            self.action_pred = gluon.nn.Dense(available_actions_count, in_units=200)
-            self.value_pred = gluon.nn.Dense(1, in_units=200)
+            self.dense = gluon.nn.Dense(500, activation='tanh')
+            self.dense2 = gluon.nn.Dense(400, activation='tanh')
+            self.dense3 = gluon.nn.Dense(200, activation='tanh')
+            self.dense4 = gluon.nn.Dense(150, activation='relu')
+            self.action_pred = gluon.nn.Dense(available_actions_count, in_units=150)
+            self.value_pred = gluon.nn.Dense(1, in_units=150)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = x.reshape((-1, 192))
         x = self.dense(x)
-#        x = self.dense2(x)
+        x = self.dense2(x)
+        x = self.dense3(x)
+        x = self.dense4(x)
         probs = self.action_pred(x)
         values = self.value_pred(x)
         return mx.ndarray.softmax(probs), values
@@ -90,7 +98,7 @@ if __name__ == '__main__':
     loss = gluon.loss.L2Loss()
     model = Net(len(doom_actions))
     model.collect_params().initialize(mx.init.Xavier(), ctx=ctx)
-    optimizer = gluon.Trainer(model.collect_params(), 'sgd', {'learning_rate': learning_rate, 'momentum': momentum_param})
+    optimizer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': learning_rate,  "beta1": beta1,  "beta2": beta2, "epsilon": epsilon})
 
     print("Start the training!")
     episode_rewards = 0
@@ -109,8 +117,7 @@ if __name__ == '__main__':
             if not close_game:
                 close_game = True
                 game.close()
-                input("Press Enter to watch the last 10 episodes live... \
-(If using PyCharm, make sure you have focus in this window.)")
+                input("Press Enter to watch the last 10 episodes live...")
 
             game.set_window_visible(True)
             game.set_mode(Mode.ASYNC_PLAYER)

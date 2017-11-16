@@ -19,7 +19,7 @@ from mxnet import nd, autograd
 
 ACTIONS = ['left', 'right', 'shoot']  # available actions
 ENV_SIZE = 5  # This is the size of the environment (Number of characters to move around)
-EPISODES = 500000  # Number of episodes to be played
+EPISODES = 300000  # Number of episodes to be played
 LEARNING_STEPS = 250  # Maximum number of learning steps within each episodes
 MAX_SHOTS = 5  # Max shots the player can take.
 DISPLAY_COUNT = 1000  # The number of episodes to play before showing statistics and last played game.

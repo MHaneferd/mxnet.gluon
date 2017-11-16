@@ -11,7 +11,7 @@ import mxnet.ndarray as F
 from mxnet import autograd
 from mxnet import gluon
 
-EPISODES = 300000  # Number of episodes to be played
+EPISODES = 1000000  # Number of episodes to be played
 LEARNING_STEPS = 250  # Maximum number of learning steps within each episodes
 DISPLAY_COUNT = 1000  # The number of episodes to play before showing statistics.
 
@@ -20,7 +20,7 @@ gamma = 0.9
 beta1 = 0.9
 beta2 = 0.999
 epsilon = 1e-8
-learning_rate = 0.001
+learning_rate = 0.0001
 momentum_param = 0.05
 learning_rates = [0.0001, 0.01]
 
@@ -31,9 +31,9 @@ resolution = (30, 45)
 ctx = mx.cpu()
 
 # Configuration file path
-# config_file_path = "../../ViZDoom/scenarios/simpler_basic.cfg"
+config_file_path = "../../ViZDoom/scenarios/simpler_basic.cfg"
 # config_file_path = "../../ViZDoom/scenarios/rocket_basic.cfg"
-config_file_path = "../../ViZDoom/scenarios/basic.cfg"
+# config_file_path = "../../ViZDoom/scenarios/basic.cfg"
 # config_file_path = "../../ViZDoom/scenarios/deathmatch.cfg"
 
 manualSeed = 1  # Set the desired seed to reproduce the results
@@ -51,29 +51,34 @@ class Net(gluon.Block):
     def __init__(self, available_actions_count):
         super(Net, self).__init__()
         with self.name_scope():
-            self.conv1 = gluon.nn.Conv2D(8, kernel_size=6, strides=3)
-            self.conv2 = gluon.nn.Conv2D(8, kernel_size=3, strides=2)
-            self.lstm = gluon.rnn.LSTM(500, 1)
-            self.dense = gluon.nn.Dense(500, activation='relu')
-            self.dense2 = gluon.nn.Dense(500, activation='relu')
+            self.available_actions_count = available_actions_count
+            self.conv1 = gluon.nn.Conv2D(8, kernel_size=6, strides=3, activation='relu')
+            self.conv2 = gluon.nn.Conv2D(8, kernel_size=3, strides=2, activation='relu')
+#            self.lstm = gluon.rnn.LSTM(150, 1)
+#            self.dense = gluon.nn.Dense(150, activation='relu')
+#            self.dense2 = gluon.nn.Dense(150, activation='relu')
 #            self.dense3 = gluon.nn.Dense(500, activation='tanh')
 #            self.dense4 = gluon.nn.Dense(500, activation='relu')
-            self.action_pred = gluon.nn.Dense(available_actions_count, in_units=500)
-            self.value_pred = gluon.nn.Dense(1, in_units=500)
+#            self.action_pred = gluon.nn.Dense(available_actions_count, in_units=150)
+#            self.value_pred = gluon.nn.Dense(1, in_units=150)
+            self.action_pred = gluon.rnn.LSTM(available_actions_count,1 )
+            self.value_pred = gluon.rnn.LSTM(1, 1)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = x.reshape((-1, 192))
         x = x.reshape((1,1, 192))
-        x = self.lstm(x)
-        x = self.dense(x)
-        x = self.dense2(x)
+#        x = self.lstm(x)
+#        x = self.dense(x)
+#        x = self.dense2(x)
 #        x = self.dense3(x)
 #        x = self.dense4(x)
         probs = self.action_pred(x)
         values = self.value_pred(x)
-        return mx.ndarray.softmax(probs), values
+        probs = probs.reshape((-1, self.available_actions_count))
+        values = values.reshape((-1, 1))
+        return mx.ndarray.softmax(probs,axis=1), values
 
 
 # Creates and initializes ViZDoom environment.
@@ -98,10 +103,12 @@ if __name__ == '__main__':
     n = game.get_available_buttons_size()
     doom_actions = [list(a) for a in it.product([0, 1], repeat=n)]
 
-    loss = gluon.loss.L2Loss()
+    loss = gluon.loss.L1Loss()
     model = Net(len(doom_actions))
-    model.collect_params().initialize(mx.init.Xavier(), ctx=ctx)
+#    model.collect_params().initialize(mx.init.Xavier(), ctx=ctx)
+    model.initialize(mx.init.Uniform(0.02))
     optimizer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': learning_rate,  "beta1": beta1,  "beta2": beta2, "epsilon": epsilon})
+#    optimizer = gluon.Trainer(model.collect_params(), 'adam', {'learning_rate': 0.0001})
 
     print("Start the training!")
     episode_rewards = 0
