@@ -7,7 +7,7 @@
 #  x----+-Episodes 125000	 Results: mean: 64.5 +/- 80.3, min: -131.0, max: 100.0,
 #
 #  Based on this python script:
-#  https://github.com/apache/incubator-mxnet/blob/master/example/gluon/actor_critic.py
+#  https://github.com/apache/incubator-mxnet/tree/master/example/gluon/actor_critic
 #
 
 import random
